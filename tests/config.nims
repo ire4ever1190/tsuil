@@ -1,2 +1,1 @@
 switch("path", "../src")
-

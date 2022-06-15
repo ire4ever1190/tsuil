@@ -8,8 +8,11 @@ import std/[
 import pdfscraper
 import common
 
+const pdfFile = "tests/example.pdf"
+
+
 test "Getting info":
-  let info = getPDFInfo("tests/example.pdf")
+  let info = getPDFInfo(pdfFile)
   check:
     info.title == "Example Title"
     info.creationDate == "2022-06-15T14:20:53+10".parse(timeFormat)
@@ -20,7 +23,7 @@ test "Getting info":
     info.filename == "example.pdf"
     
 test "Getting pages":
-  let pages = toSeq: getPDFPages("tests/example.pdf")
+  let pages = toSeq: getPDFPages(pdfFile)
   check:
     pages.len == 2
     pages[0].strip() == "First page\n\n1"
