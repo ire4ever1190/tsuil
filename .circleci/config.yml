@@ -1,0 +1,17 @@
+version: 2.1
+
+jobs:
+  Unit-Tests:
+    docker:
+      - image: nimlang/nim:1.6.8-alpine-regular
+
+    steps:
+      - checkout
+      - run:
+          name: Install poppler
+          command: apk install poppler
+
+workflows:
+  Tests:
+    jobs:
+      - Unit-Tests
