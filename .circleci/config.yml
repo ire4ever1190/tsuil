@@ -9,8 +9,10 @@ jobs:
       - checkout
       - run:
           name: Install poppler
-          command: apk install poppler
-
+          command: apk add poppler
+      - run:
+          name: Run test suite
+          command: nimble test
 workflows:
   Tests:
     jobs:
