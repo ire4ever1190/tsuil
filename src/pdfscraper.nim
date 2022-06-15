@@ -3,24 +3,29 @@ import std/[
   times,
   osproc,
   parseutils,
-  strutils
+  strutils,
+  os
 ]
+
+import common
 
 type
   PDFFileInfo* = object
+    ## Metadata associated with the PDF
     title*: string
     creationDate*: DateTime
     pages*: int
     author*: string
     keywords*: string
     subject*: string 
+    filename*: string
 
 const 
   processOptions = {poStdErrToStdOut, poUsePath}
-  timeFormat = "yyyy-MM-dd'T'hh:mm:sszz" # ISO-8601
   
 proc getPDFInfo*(path: string): PDFFileInfo =
   ## Uses `pdftotext` to scrape PDF information
+  result.filename = path.extractFileName()
   let process = startProcess("pdfinfo", args = [path, "-isodates"], options = processOptions)
   defer: process.close()
   for line in process.lines:
@@ -43,7 +48,7 @@ proc getPDFInfo*(path: string): PDFFileInfo =
     of "Keywords":
       result.keywords = value
     of "CreationDate":
-      result.creationDate = value.parse(timeFormat)
+      result.creationDate = value.parse(timeFormat, tz = utc())
     else: discard
 
 iterator getPDFPages*(path: string): string =
@@ -52,9 +57,7 @@ iterator getPDFPages*(path: string): string =
   defer: process.close()
   var currLine: string
   for line in process.lines:
-    echo line
     if '\f' in line:
       yield currLine
       currLine.setLen(0)
     currLine &= line & '\n'
-  # yield currLine

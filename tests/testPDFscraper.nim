@@ -1,18 +1,23 @@
-import std/unittest
+import std/[
+  strutils,
+  sequtils,
+  times,
+  unittest
+]
+
 import pdfscraper
-import std/times
-import std/sequtils
-import std/strutils
+import common
 
 test "Getting info":
   let info = getPDFInfo("tests/example.pdf")
   check:
     info.title == "Example Title"
-    info.creationDate == "2022-06-15T14:20:53+10".parse("yyyy-MM-dd'T'hh:mm:sszz")
+    info.creationDate == "2022-06-15T14:20:53+10".parse(timeFormat)
     info.subject == "Example Subject"
     info.keywords == "Some Keywords"
     info.author == "John Doe"
     info.pages == 2
+    info.filename == "example.pdf"
     
 test "Getting pages":
   let pages = toSeq: getPDFPages("tests/example.pdf")
