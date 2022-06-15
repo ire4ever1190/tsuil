@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   Unit-Tests:
     docker:
-      - image: nimlang/nim:1.6.8-alpine-regular
+      - image: nimlang/nim:1.6.4-alpine-regular
 
     steps:
       - checkout
