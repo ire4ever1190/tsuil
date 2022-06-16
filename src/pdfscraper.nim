@@ -51,6 +51,12 @@ proc getPDFInfo*(path: string): PDFFileInfo =
       result.creationDate = value.parse(timeFormat, tz = utc())
     else: discard
 
+proc isPDF*(path: string): bool =
+  ## Returns true if file is a PDF.
+  ## Uses the `file` command to check this
+  let output = execProcess("file", args = ["--mime-type", path], options = processOptions)
+  result = "application/pdf" in output
+
 iterator getPDFPages*(path: string): string =
   ## Returns the pages in the PDF
   let process = startProcess("pdftotext", args = [path, "-"], options = processOptions)

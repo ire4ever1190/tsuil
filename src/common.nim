@@ -10,8 +10,8 @@ const
 
 type
   MultipartValue = object
-    name, value: string
-    params: StringTableRef
+    name*, value*: string
+    params*: StringTableRef
 
 {.push inline.}
 proc filename*(mv: MultipartValue): string =
@@ -44,7 +44,6 @@ proc multipartForm*(ctx: Context): Table[string, MultipartValue] =
   var state = Sep
   var currVal = MultipartValue(params: newStringTable())
   
-  # echo body.mapIt(ord it)
   while i < body.len:
     var line: string
     case state
@@ -53,18 +52,12 @@ proc multipartForm*(ctx: Context): Table[string, MultipartValue] =
       # Add the current value to the result if needed
       # then just start parsing head
       if currVal.name != "":
-        echo "currval: ", currVal
         result[currVal.name] = currVal
         currVal = MultipartValue(params: newStringTable())
       state = Head
     of Head:
       i += body.parseUntil(line, "\c\L", i) + 2
-      if line == "":
-        echo ord body[i - 2]
-        echo ord body[i - 3]
       if line == "" and body[i - 4] == '\c' and body[i - 3] == '\L':
-        echo "el body"
-        
         state = Body
       else:
         var key: string

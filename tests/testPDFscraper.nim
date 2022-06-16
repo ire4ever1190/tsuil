@@ -28,3 +28,7 @@ test "Getting pages":
     pages.len == 2
     pages[0].strip() == "First page\n\n1"
     pages[1].strip() == "Second page\n\n2"
+
+test "Checking is PDF":
+  check pdfFile.isPDF()
+  check not "tests/notpdf.pdf".isPDF()
