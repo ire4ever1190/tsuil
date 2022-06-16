@@ -22,7 +22,7 @@ suite "PDF info":
     check db.value("SELECT COUNT(*) FROM PDF").get().intVal == 1
     
   test "Retrieving via ID":
-    let dbInfo = db.getPDF(id)
+    let dbInfo = db.getPDF(id).get()
     check:
       dbInfo.title == info.title
       dbInfo.creationDate == info.creationDate

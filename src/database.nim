@@ -1,10 +1,10 @@
 
 import std/[
-  times
+  times,
+  options
 ]
 
 import tiny_sqlite
-
 import common, pdfscraper
 
 const tablesScript = slurp("tables.sql")
@@ -83,13 +83,13 @@ proc searchFor*(db; query: string): seq[SearchResult] =
       pdf: fromDBValue(row["id"], int64)
     )
     
-proc getPDF*(db; pdfID: int64): PDFFileInfo =
+proc getPDF*(db; pdfID: int64): Option[PDFFileInfo] =
   ## Get metadata on PDF from its ID
   const stmt = """
     SELECT title, creationDate, pages, author, keywords, subject, filename
     FROM PDF
     WHERE id = ?
   """
-  result = db.one(stmt, pdfID).get().to(PDFFileInfo)
+  result = some db.one(stmt, pdfID).get().to(PDFFileInfo)
 
 export tiny_sqlite

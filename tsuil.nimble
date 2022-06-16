@@ -11,7 +11,7 @@ bin           = @["tsuil"]
 # Dependencies
 
 requires "nim >= 1.6.0"
-requires "mike#8b26ed5"
+requires "mike#8ddb711"
 requires "tiny_sqlite == 0.1.3"
 requires "threading == 0.1.0"
 
