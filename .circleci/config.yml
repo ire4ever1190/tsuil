@@ -9,7 +9,7 @@ jobs:
       - checkout
       - run:
           name: Install poppler
-          command: apk add poppler-utils
+          command: apk add poppler-utils file
 
       - run:
           name: Update nimble
