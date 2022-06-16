@@ -9,15 +9,15 @@ const
   timeFormat* = "yyyy-MM-dd'T'hh:mm:sszz" # ISO-8601
 
 type
-  MultipartValue = object
+  MultipartValue* = object
     name*, value*: string
     params*: StringTableRef
 
 {.push inline.}
-proc filename*(mv: MultipartValue): string =
+func filename*(mv: MultipartValue): string =
   result = mv.params["filename"]
 
-proc contentType*(mv: MultipartValue): string =
+func contentType*(mv: MultipartValue): string =
   result = mv.params["Content-Type"]
   
 {.pop.}
@@ -33,7 +33,7 @@ proc point(x: string, i: int) =
     stdout.write " "
   echo "^"
 
-proc multipartForm*(ctx: Context): Table[string, MultipartValue] =
+func multipartForm*(ctx: Context): Table[string, MultipartValue] {.noSideEffect, gcsafe.} =
   ## Got multipart data from context
   let contentHeader = ctx.getHeader("Content-Type")
   let boundary = "\c\L--" & contentHeader[contentHeader.rfind("boundary=") + 9 .. ^1]

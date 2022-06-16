@@ -92,3 +92,4 @@ proc getPDF*(db; pdfID: int64): PDFFileInfo =
   """
   result = db.one(stmt, pdfID).get().to(PDFFileInfo)
 
+export tiny_sqlite
