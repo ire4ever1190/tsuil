@@ -72,8 +72,10 @@ type
 
 
 "/" -> get:
-  ctx.setHeader("Content-Type", "text/html")
-  ctx.send(index)
+  await ctx.sendFile("build/index.html")
+
+"/static/^file" -> get:
+  await ctx.sendFile("build/static" / ctx.pathParams["file"])
 
 "/uploadfile" -> post:
   var form = ctx.multipartForm()
