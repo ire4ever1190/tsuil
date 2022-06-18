@@ -70,12 +70,22 @@ type
     msg: string
     code: int
 
+import std/httpclient
+proc sendReactFile(ctx: Context, path: string) {.async.} =
+  when defined(release):
+    await ctx.sendFile("build" / path)
+  else:
+    let client = newAsyncHttpClient()
+    defer: client.close()
+    let resp = await client.request("http://127.0.0.1:3000/" & path)
+    
+    ctx.send(await resp.body, resp.code, resp.headers)
 
 "/" -> get:
-  await ctx.sendFile("build/index.html")
+  await ctx.sendReactFile("index.html")
 
 "/static/^file" -> get:
-  await ctx.sendFile("build/static" / ctx.pathParams["file"])
+  await ctx.sendReactFile("static" / ctx.pathParams["file"])
 
 "/uploadfile" -> post:
   var form = ctx.multipartForm()

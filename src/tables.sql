@@ -1,13 +1,13 @@
 -- Basic Information about a PDF
 CREATE TABLE IF NOT EXISTS PDF (
-  ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-  title VARCHAR,
-  creationDate TEXT, -- Date is stored as ISO8601 string
+  ID BLOB NOT NULL PRIMARY KEY,
+  title TEXT,
+  lastModified TEXT, -- Date is stored as ISO8601 string
   pages INT,
-  author VARCHAR,
-  keywords VARCHAR,
-  subject VARCHAR,
-  filename VARCHAR
+  author TEXT,
+  keywords TEXT,
+  subject TEXT,
+  filename TEXT
 );
 
 -- Store pages in seperate rows so that we can direct the user directly to the page with the text

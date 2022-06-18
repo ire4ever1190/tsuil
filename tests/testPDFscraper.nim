@@ -15,7 +15,7 @@ test "Getting info":
   let info = getPDFInfo(pdfFile)
   check:
     info.title == "Example Title"
-    info.creationDate == "2022-06-15T14:20:53+10".parse(timeFormat)
+    info.lastModified == "2022-06-15T14:20:53+10".parse(timeFormat)
     info.subject == "Example Subject"
     info.keywords == "Some Keywords"
     info.author == "John Doe"

@@ -6,6 +6,7 @@ import std/[
 
 import tiny_sqlite
 import common, pdfscraper
+import anano
 
 const tablesScript = slurp("tables.sql")
 
@@ -14,19 +15,28 @@ using db: DbConn
 type
   SearchResult* = object
     page*: int
-    pdf*: int64
+    pdf*: NanoID
 
 #
 # Converters
 #
 
-proc toDBValue(dt: DateTime): DbValue =
+proc toDBValue(dt: DateTime): DBValue =
   ## Converts DateTime into a string for SQLite
   DBValue(kind: sqliteText, strVal: dt.format(timeFormat))
 
-proc fromDBValue(value: DbValue, T: typedesc[DateTime]): DateTime =
+proc fromDBValue(value: DBValue, T: typedesc[DateTime]): DateTime =
   ## Converts string from SQLite into a DateTime
   value.strVal.parse(timeFormat, tz = utc())
+
+proc toDBValue(dt: NanoID): DBValue =
+  ## Converts a NanoID into an sqlite blob (more efficient than string)
+  DBValue(kind: sqliteBlob, blobVal: @dt)
+
+proc fromDBValue(value: DBValue, T: typedesc[NanoID]): NanoID =
+  ## Get the ID back from the value
+  for i in 0 ..< nanoIDSize:
+    result[i] = value.blobVal[i]
 
 #
 # Utils
@@ -45,19 +55,20 @@ proc to[T](x: ResultRow, obj: typedesc[T]): T =
 #
 
 
-proc insert*(db; pdf: PDFFileInfo): int64 {.discardable.} =
+proc insert*(db; pdf: PDFFileInfo): NanoID {.discardable.} =
   ## Inserts PDF metadata into the database.
   ## Returns the ID that SQLite gave it
   const stmt = """
-      INSERT INTO PDF (title, creationDate, pages, author, keywords, subject, filename)
+      INSERT INTO PDF (id, title, lastModified, pages, author, keywords, subject, filename)
       VALUES (
-        ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?
       )
   """
-  db.exec(stmt, pdf.title, pdf.creationDate, pdf.pages, pdf.author, pdf.keywords, pdf.subject, pdf.filename)
-  result = db.lastInsertRowID()
+  let id = genNanoID()
+  db.exec(stmt, id, pdf.title, pdf.lastModified, pdf.pages, pdf.author, pdf.keywords, pdf.subject, pdf.filename)
+  result = id
 
-proc insertPage*(db; pdfID: int64, num: int, body: string) {.discardable.} =
+proc insertPage*(db; pdfID: NanoID, num: int, body: string) {.discardable.} =
   ## Inserts a page into the database.
   ## PDFs metadata must already exist
   const stmt = """
@@ -80,16 +91,17 @@ proc searchFor*(db; query: string): seq[SearchResult] =
   for row in db.iterate(stmt, query):
     result &= SearchResult(
       page: fromDBValue(row["num"], int),
-      pdf: fromDBValue(row["id"], int64)
+      pdf: fromDBValue(row["id"], NanoID)
     )
     
-proc getPDF*(db; pdfID: int64): Option[PDFFileInfo] =
+proc getPDF*(db; pdfID: NanoID): Option[PDFFileInfo] =
   ## Get metadata on PDF from its ID
   const stmt = """
-    SELECT title, creationDate, pages, author, keywords, subject, filename
+    SELECT title, lastModified, pages, author, keywords, subject, filename
     FROM PDF
     WHERE id = ?
   """
   result = some db.one(stmt, pdfID).get().to(PDFFileInfo)
 
 export tiny_sqlite
+export anano

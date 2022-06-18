@@ -13,7 +13,7 @@ const pdfFile = "tests/example.pdf"
 test "Creating tables":
   db.createTables()
 
-var id: int64 # ID of the PDF we are testing with
+var id: NanoID # ID of the PDF we are testing with
 
 suite "PDF info":
   let info = getPDFInfo(pdfFile)
@@ -25,7 +25,7 @@ suite "PDF info":
     let dbInfo = db.getPDF(id).get()
     check:
       dbInfo.title == info.title
-      dbInfo.creationDate == info.creationDate
+      dbInfo.lastModified == info.lastModified
 
 suite "Pages":
   let pages = toSeq: getPDFPages(pdfFile)

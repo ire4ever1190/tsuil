@@ -13,7 +13,7 @@ type
   PDFFileInfo* = object
     ## Metadata associated with the PDF
     title*: string
-    creationDate*: DateTime
+    lastModified*: DateTime
     pages*: int
     author*: string
     keywords*: string
@@ -47,8 +47,8 @@ proc getPDFInfo*(path: string): PDFFileInfo =
       result.author = value
     of "Keywords":
       result.keywords = value
-    of "CreationDate":
-      result.creationDate = value.parse(timeFormat, tz = utc())
+    of "ModDate":
+      result.lastModified = value.parse(timeFormat, tz = utc())
     else: discard
 
 proc isPDF*(path: string): bool =
