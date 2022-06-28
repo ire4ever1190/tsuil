@@ -8,13 +8,17 @@ import std/[
   locks,
   isolation,
   strutils,
-  json
+  json,
+  md5,
+  times
 ]
 
 import threading/channels
 
 const pdfFolder = "pdfs"
 
+proc `%`(id: NanoID): JsonNode =
+  result = % $id
 
 var
   dbLock: Lock 
@@ -71,6 +75,7 @@ type
     code: int
 
 import std/httpclient
+
 proc sendReactFile(ctx: Context, path: string) {.async.} =
   when defined(release):
     await ctx.sendFile("build" / path)
@@ -81,6 +86,10 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
     
     ctx.send(await resp.body, resp.code, resp.headers)
 
+proc send(ctx: Context, msg: ErrorMsg) =
+  ## Sends error message
+  ctx.send(msg, HttpCode(msg.code))
+
 "/" -> get:
   await ctx.sendReactFile("index.html")
 
@@ -89,25 +98,43 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
 
 "/uploadfile" -> post:
   var form = ctx.multipartForm()
-  echo "recieved ", form["file"].name
-  pdfChan.send(unsafeIsolate move form["file"])
-  ctx.send "Processing"
+  if "file" in form:
+    echo "recieved ", form["file"].name
+    pdfChan.send(unsafeIsolate move form["file"])
+    ctx.send "Processing"
+  else:
+    ctx.send(ErrorMsg(msg: "Invalid upload, make sure the file is in the `file` param", code: 403))
 
 "/search" -> get:
-  let query = ctx.queryParams["query"]
-  var res: seq[SearchResult]
-  withDB:
-    res = db.searchFor(query)
-  ctx.send(res)  
+  if "query" in ctx.queryParams:
+    let query = ctx.queryParams["query"]
+    var res: seq[SearchResult]
+    withDB:
+      res = db.searchFor(query)
+    ctx.send(res)  
+  else:
+    ctx.send(ErrorMsg(msg: "Missing `query` query parameter", code: 403))
 
 "/pdf/:id" -> get:
-  let id = ctx.pathParams["id"].parseBiggestInt().int64
-  var info: Option[PDFFileInfo]
-  withDB: info = db.getPDF(id)
-  if info.isSome:
-    ctx.setHeader("Cache-Control", "public, max-age=432000") # Cache for next 5 days
-    await ctx.sendFile("pdfs" / $id & ".pdf")
+  if ctx.pathParams["id"].len != nanoIDSize:
+    ctx.send(ErrorMsg(msg: "Invalid ID", code: 403))
   else:
-    ctx.send(ErrorMsg(msg: "Couldn't find pdf: " & $id, code: 404), Http404)
+    let id = ctx.pathParams["id"].parseNanoID()
+    var info: Option[PDFFileInfo]
+    withDB: info = db.getPDF(id)
+    if info.isSome:
+      # Generate a weak ETag to allow the client to cache the PDFs
+      var etag: string
+      etag &= "W/\""
+      etag &= $toMD5(info.get().lastModified.format(timeFormat))
+      etag &= "\""
+      # Then check if the client should reuse their cache or not
+      if ctx.getHeader("ETag", "") == etag:
+        ctx.send("Use cache", Http304)
+      else:
+        ctx.setHeader("ETag", etag)
+        await ctx.sendFile("pdfs" / $id & ".pdf")
+    else:
+      ctx.send(ErrorMsg(msg: "Couldn't find pdf: " & $id, code: 404))
     
 run(threads = 1)

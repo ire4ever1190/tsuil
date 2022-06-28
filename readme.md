@@ -11,6 +11,6 @@ Requires `poppler` package for pdf operations
 ## FAQ
 
  - **Why Nim**: I like Nim
- - **Why react**: Need to learn it for uni course so
+ - **Why react**: Need to learn it for uni course
  - **Why circle CI instead of github actions?**: See react
  - **Is it any good?**: no

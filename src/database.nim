@@ -31,12 +31,12 @@ proc fromDBValue(value: DBValue, T: typedesc[DateTime]): DateTime =
 
 proc toDBValue(dt: NanoID): DBValue =
   ## Converts a NanoID into an sqlite blob (more efficient than string)
-  DBValue(kind: sqliteBlob, blobVal: @dt)
+  DBValue(kind: sqliteBlob, blobVal: @cast[array[nanoIDSize, byte]](dt))
 
 proc fromDBValue(value: DBValue, T: typedesc[NanoID]): NanoID =
   ## Get the ID back from the value
   for i in 0 ..< nanoIDSize:
-    result[i] = value.blobVal[i]
+    result[i] = char(value.blobVal[i])
 
 #
 # Utils
