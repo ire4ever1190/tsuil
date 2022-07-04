@@ -49,7 +49,7 @@ proc createTables*(db) =
 proc to[T](x: ResultRow, obj: typedesc[T]): T =
   for field, value in result.fieldPairs():
     value = fromDBValue(x[field], typeof(value))
-  
+
 #
 # Access procs
 #
@@ -80,12 +80,12 @@ proc insertPage*(db; pdfID: NanoID, num: int, body: string) {.discardable.} =
   db.exec(stmt, pdfID, num, body)
 
 proc searchFor*(db; query: string): seq[SearchResult] =
-  ## Searches for some text and then returns 
+  ## Searches for some text and then returns
   ## list of results (which have the pdf and page)
   const stmt = """
-    SELECT id, num 
-    FROM PAGE_fts 
-    WHERE body MATCH ? 
+    SELECT id, num
+    FROM PAGE_fts
+    WHERE body MATCH ?
       ORDER BY RANK
   """
   for row in db.iterate(stmt, query):
@@ -93,7 +93,7 @@ proc searchFor*(db; query: string): seq[SearchResult] =
       page: fromDBValue(row["num"], int),
       pdf: fromDBValue(row["id"], NanoID)
     )
-    
+
 proc getPDF*(db; pdfID: NanoID): Option[PDFFileInfo] =
   ## Get metadata on PDF from its ID
   const stmt = """
@@ -105,3 +105,4 @@ proc getPDF*(db; pdfID: NanoID): Option[PDFFileInfo] =
 
 export tiny_sqlite
 export anano
+#

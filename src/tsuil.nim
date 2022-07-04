@@ -10,7 +10,9 @@ import std/[
   strutils,
   json,
   md5,
-  times
+  times,
+  algorithm,
+  setutils
 ]
 
 import threading/channels
@@ -108,10 +110,16 @@ proc send(ctx: Context, msg: ErrorMsg) =
 "/search" -> get:
   if "query" in ctx.queryParams:
     let query = ctx.queryParams["query"]
-    var res: seq[SearchResult]
+    var resp = newJObject()
     withDB:
-      res = db.searchFor(query)
-    ctx.send(res)  
+      for r in db.searchFor(query):
+        let id = $r.pdf
+        if id notin resp:
+          resp[id] = db.getPDF(r.pdf).get().toJson()
+          resp[id]["pages"] = newJArray()
+        resp[id]["pages"] &= %r.page
+    # TODO: Sort the PDFs according to how many results were in each one
+    ctx.send(resp)
   else:
     ctx.send(ErrorMsg(msg: "Missing `query` query parameter", code: 403))
 
@@ -124,6 +132,7 @@ proc send(ctx: Context, msg: ErrorMsg) =
     withDB: info = db.getPDF(id)
     if info.isSome:
       # Generate a weak ETag to allow the client to cache the PDFs
+      # It will just be a hash of the last modification time
       var etag: string
       etag &= "W/\""
       etag &= $toMD5(info.get().lastModified.format(timeFormat))
