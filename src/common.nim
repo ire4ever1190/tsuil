@@ -6,7 +6,10 @@ import std/[
 
 const timeFormat* = "yyyy-MM-dd'T'hh:mm:sszz" # ISO-8601
 
-proc toJsonHook*(a: DateTime): JsonNode =
-  result = %a.format(timeFormat)
+proc toJsonHook*(d: DateTime): JsonNode =
+  result = %d.format(timeFormat)
+
+proc fromJsonHook*(d: var DateTime, data: JsonNode) =
+  d = data.str.parse(timeFormat)
 
 export jsonutils

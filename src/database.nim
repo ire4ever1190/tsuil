@@ -1,7 +1,7 @@
 
 import std/[
   times,
-  options
+  options,
 ]
 
 import tiny_sqlite
@@ -87,6 +87,7 @@ proc searchFor*(db; query: string): seq[SearchResult] =
     FROM PAGE_fts
     WHERE body MATCH ?
       ORDER BY RANK
+    LIMIT 25
   """
   for row in db.iterate(stmt, query):
     result &= SearchResult(
