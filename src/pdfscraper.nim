@@ -4,7 +4,8 @@ import std/[
   osproc,
   parseutils,
   strutils,
-  os
+  os,
+  sha1
 ]
 
 import common
@@ -19,6 +20,7 @@ type
     keywords*: string
     subject*: string 
     filename*: string
+    hash*: SecureHash # Hash of the file contents
 
 const 
   processOptions = {poStdErrToStdOut, poUsePath}
@@ -26,6 +28,7 @@ const
 proc getPDFInfo*(path: string): PDFFileInfo =
   ## Uses `pdftotext` to scrape PDF information
   result.filename = path.extractFileName()
+  result.hash = secureHashFile(path)
   let process = startProcess("pdfinfo", args = [path, "-isodates"], options = processOptions)
   defer: process.close()
   for line in process.lines:

@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS PDF (
   author TEXT,
   keywords TEXT,
   subject TEXT,
-  filename TEXT
+  filename TEXT,
+  hash BLOB UNIQUE
 );
 
 -- Store pages in seperate rows so that we can direct the user directly to the page with the text

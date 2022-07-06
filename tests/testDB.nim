@@ -27,6 +27,10 @@ suite "PDF info":
       dbInfo.title == info.title
       dbInfo.lastModified == info.lastModified
 
+  test "Can't add same PDF":
+    expect SqliteError:
+      db.insert getPDFInfo(pdfFile)
+
 suite "Pages":
   let pages = toSeq: getPDFPages(pdfFile)
   test "Inserting":
