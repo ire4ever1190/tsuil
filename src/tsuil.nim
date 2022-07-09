@@ -1,4 +1,5 @@
 import mike
+import mike/errors
 import common
 import database
 import pdfscraper
@@ -6,25 +7,28 @@ import std/[
   os,
   tables,
   locks,
-  isolation,
   strutils,
   json,
   md5,
   times,
   algorithm,
-  setutils
+  setutils,
+  sha1
 ]
+from tiny_sqlite import SqliteError
+import asyncthreadpool
 
-import threading/channels
-
-const pdfFolder = "pdfs"
-
+const
+  # Move this stuff to config file
+  pdfFolder = "pdfs"
+  databaseFile {.strdefine.} = "database.db"
+echo "Using ", databaseFile
 proc `%`(id: NanoID): JsonNode =
   result = % $id
 
 var
   dbLock: Lock 
-  db {.guard: dbLock.} = openDatabase("database.db")
+  db {.guard: dbLock.} = openDatabase(databaseFile)
 
 template withDB(body: untyped) =
   ## Run a block of code with the DB lock turned on
@@ -35,77 +39,83 @@ template withDB(body: untyped) =
 
 db.createTables()
 
-proc process(name, file: sink string)  = 
+proc process(name, file: string): Option[string] =
+  ## Processes a PDF file
+  ## - writes to disk
+  ## - gets info
+  ## - adds to database
+  ## Errors are return in result (if isSome)
   # Write the file
   let path = pdfFolder / name
   discard existsOrCreateDir(pdfFolder)
   
   path.writeFile(file)
   if not path.isPDF():
-    echo name, " was not a PDF"
-    return
+    removeFile file
+    return some"File is not a PDF"
   
   withDB:
     let info = path.getPDFInfo()
-    let pdfID = db.insert info
-    let newPath = pdfFolder / $pdfID & ".pdf"
-    moveFile(path, newPath)
-    var i = 1
-    for page in newPath.getPDFPages():
-      echo "Adding ", i
-      db.insertPage(pdfID, i, page)
-      inc i
-    echo "done"
+    var pdfID: NanoID
+    try:
+      pdfID = db.insert info
+    except SqliteError as e:
+      # Might not be exact error, but most likely thing that happened
+      result = some"File is already in database"
+    if result.isNone:
+      # result = some $pdfID
+      let newPath = pdfFolder / $pdfID & ".pdf"
+      moveFile(path, newPath)
+      var i = 1
+      for page in newPath.getPDFPages():
+        db.insertPage(pdfID, i, page)
+        inc i
 
-var pdfChan = newChan[MultipartValue]()
+# Pretty overkill to have seperate worker thread
+# since it completes fast but wanted to try it out
+var pdfWorker = newThreadPool()
 
-proc pdfWorker() =
-  while true:
-    var info: MultipartValue
-    pdfChan.recv(info)
-    echo "Processing ", info.name, "..."
-    process(info.filename.get(), info.value)
-
-var worker: Thread[void]
-createThread(worker, pdfWorker)
-      
 const index = slurp("../public/index.html")
-
-type
-  ErrorMsg = object
-    msg: string
-    code: int
 
 import std/httpclient
 
 proc sendReactFile(ctx: Context, path: string) {.async.} =
+  ## When in release mode it gets the files from the build folder
+  ## During debug it makes a request to the dev server and returns response (hacky yes, but works)
   when defined(release):
     await ctx.sendFile("build" / path)
   else:
     let client = newAsyncHttpClient()
     defer: client.close()
     let resp = await client.request("http://127.0.0.1:3000/" & path)
-    
     ctx.send(await resp.body, resp.code, resp.headers)
-
-proc send(ctx: Context, msg: ErrorMsg) =
-  ## Sends error message
-  ctx.send(msg, HttpCode(msg.code))
 
 "/" -> get:
   await ctx.sendReactFile("index.html")
 
+"/pdfs" -> get:
+  await ctx.sendReactFile("pdfs.html")
+
 "/static/^file" -> get:
   await ctx.sendReactFile("static" / ctx.pathParams["file"])
 
-"/uploadfile" -> post:
+"/pdf" -> post:
   var form = ctx.multipartForm()
   if "file" in form:
     echo "recieved ", form["file"].name
-    pdfChan.send(unsafeIsolate move form["file"])
-    ctx.send "Processing"
+    let
+      name = form["file"].name
+      file = form["file"].value
+    {.gcsafe.}:
+      let resVal = await pdfWorker.spawn process(
+        name,
+        file
+      )
+    # Wait for it to be processed
+    let status = if resVal.isNone: Http200 else: Http400
+    ctx.send(%*{"success": resVal.isNone, "msg": resVal.get("")}, status)
   else:
-    ctx.send(ErrorMsg(msg: "Invalid upload, make sure the file is in the `file` param", code: 403))
+    raise (ref KeyError)(msg: "Invalid upload, make sure the file is in the `file` param")
 
 "/search" -> get:
   if "query" in ctx.queryParams:
@@ -121,11 +131,12 @@ proc send(ctx: Context, msg: ErrorMsg) =
     # TODO: Sort the PDFs according to how many results were in each one
     ctx.send(resp)
   else:
-    ctx.send(ErrorMsg(msg: "Missing `query` query parameter", code: 403))
+    raise (ref KeyError)(msg: "Missing `query` query parameter")
 
 "/pdf/:id" -> get:
-  if ctx.pathParams["id"].len != nanoIDSize:
-    ctx.send(ErrorMsg(msg: "Invalid ID", code: 403))
+  let strID = ctx.pathParams["id"]
+  if strID.len != nanoIDSize:
+    raise (ref KeyError)(msg: "PDF with id " & strID & " is not valid")
   else:
     let id = ctx.pathParams["id"].parseNanoID()
     var info: Option[PDFFileInfo]
@@ -133,10 +144,7 @@ proc send(ctx: Context, msg: ErrorMsg) =
     if info.isSome:
       # Generate a weak ETag to allow the client to cache the PDFs
       # It will just be a hash of the last modification time
-      var etag: string
-      etag &= "W/\""
-      etag &= $toMD5(info.get().lastModified.format(timeFormat))
-      etag &= "\""
+      var etag = $info.get().hash
       # Then check if the client should reuse their cache or not
       if ctx.getHeader("ETag", "") == etag:
         ctx.send("Use cache", Http304)
@@ -144,6 +152,6 @@ proc send(ctx: Context, msg: ErrorMsg) =
         ctx.setHeader("ETag", etag)
         await ctx.sendFile("pdfs" / $id & ".pdf")
     else:
-      ctx.send(ErrorMsg(msg: "Couldn't find pdf: " & $id, code: 404))
-    
+      raise (ref NotFoundError)(msg: "Couldn't find pdf: " & strID)
+
 run(threads = 1)

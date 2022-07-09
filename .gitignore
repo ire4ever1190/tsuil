@@ -1,4 +1,5 @@
 node_modules/
 tsuil
 database.db
-pdfs/ 
+pdfs/
+build/
