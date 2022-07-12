@@ -7,6 +7,7 @@ license       = "MIT"
 srcDir        = "src"
 bin           = @["tsuil"]
 
+installDirs = @["build"]
 
 # Dependencies
 
@@ -16,6 +17,9 @@ requires "tiny_sqlite == 0.1.3"
 requires "asyncthreadpool#7e533b3"
 requires "anano == 0.2.0"
 
-before build:
-  when defined(release):
-    exec "npm run build"
+before install:
+  echo "Building JS..."
+  echo get("nimblePath")
+  try: exec "npm run build" except: discard
+  echo "Done"
+  mvDir "build", "src/build"
