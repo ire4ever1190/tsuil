@@ -22,7 +22,7 @@ const
   # Move this stuff to config file
   pdfFolder = "pdfs"
   databaseFile {.strdefine.} = "database.db"
-echo "Using ", databaseFile
+
 proc `%`(id: NanoID): JsonNode =
   result = % $id
 
@@ -83,7 +83,7 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
   ## When in release mode it gets the files from the build folder
   ## During debug it makes a request to the dev server and returns response (hacky yes, but works)
   when defined(release):
-    await ctx.sendFile("build" / path)
+    await ctx.sendFile(getAppDir() / "build" / path)
   else:
     let client = newAsyncHttpClient()
     defer: client.close()
@@ -92,9 +92,6 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
 
 "/" -> get:
   await ctx.sendReactFile("index.html")
-
-"/pdfs" -> get:
-  await ctx.sendReactFile("pdfs.html")
 
 "/static/^file" -> get:
   await ctx.sendReactFile("static" / ctx.pathParams["file"])
@@ -116,6 +113,9 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
     ctx.send(%*{"success": resVal.isNone, "msg": resVal.get("")}, status)
   else:
     raise (ref KeyError)(msg: "Invalid upload, make sure the file is in the `file` param")
+
+# "/pdf/:id" -> delete:
+
 
 "/search" -> get:
   if "query" in ctx.queryParams:
@@ -154,4 +154,4 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
     else:
       raise (ref NotFoundError)(msg: "Couldn't find pdf: " & strID)
 
-run(threads = 1)
+run(threads = 1, port = 4356)

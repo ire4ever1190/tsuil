@@ -78,7 +78,15 @@ proc insert*(db; pdf: PDFFileInfo): NanoID {.discardable.} =
   db.exec(stmt, id, pdf.title, pdf.lastModified, pdf.pages, pdf.author, pdf.keywords, pdf.subject, pdf.filename, pdf.hash)
   result = id
 
-proc insertPage*(db; pdfID: NanoID, num: int, body: string) {.discardable.} =
+proc deletePDF*(db; id: NanoID) =
+  ## Deletes the PDF from the database
+  const stmt = """
+    DELETE FROM PDF
+    WHERE ID = ?
+  """
+  db.exec(stmt, id)
+
+proc insertPage*(db; pdfID: NanoID, num: int, body: string) =
   ## Inserts a page into the database.
   ## PDFs metadata must already exist
   const stmt = """
