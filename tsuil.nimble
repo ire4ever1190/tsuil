@@ -21,6 +21,7 @@ before install:
   echo "Building JS..."
   echo get("nimblePath")
   # Install dependencies then build
+  exec "npm install react-app-rewired"
   exec "npm install"
   exec "npm run build"
   echo "Done"
