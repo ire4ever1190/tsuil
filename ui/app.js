@@ -19,7 +19,6 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import {Route, NavLink} from "react-router-dom";
 
 const darkTheme = createTheme({
     palette: {

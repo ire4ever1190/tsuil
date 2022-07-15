@@ -65,8 +65,8 @@ suite "Uploading PDFs":
       "msg": "File is not a PDF"
     }
 
-test "Delete PDF":
-  client.delete serverUrl("/pdf/" &
+# test "Delete PDF":
+  # client.delete serverUrl("/pdf/" &
 
 test "Searching":
   let resp = get("/search?query=first")
