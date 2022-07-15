@@ -31,7 +31,7 @@ jobs:
           command: nimble build -y
       - run:
           name: Run test suite
-          command: nimble test
+          command: nimble test -y
 
 workflows:
   Tests:

@@ -81,7 +81,7 @@ test "Searching":
     pdf["hash"].str == "B198598A60CBE85FA77AFF44119ACF36986F6FAF"
     pdf["pages"] == % @[1]
 
-test "Updating PDF":
+# test "Updating PDF":
 
 client.close()
 kill serverProcess
