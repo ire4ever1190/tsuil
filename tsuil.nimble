@@ -20,6 +20,8 @@ requires "anano == 0.2.0"
 before install:
   echo "Building JS..."
   echo get("nimblePath")
-  try: exec "npm run build" except: discard
+  # Install dependencies then build
+  exec "npm install"
+  exec "npm run build"
   echo "Done"
   mvDir "build", "src/build"
