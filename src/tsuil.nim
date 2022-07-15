@@ -83,7 +83,7 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
   ## When in release mode it gets the files from the build folder
   ## During debug it makes a request to the dev server and returns response (hacky yes, but works)
   when defined(release):
-    await ctx.sendFile(getAppDir() / "build" / path)
+    await ctx.sendFile("build" / path, dir = getAppDir())
   else:
     let client = newAsyncHttpClient()
     defer: client.close()
