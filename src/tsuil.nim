@@ -146,7 +146,7 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
       # It will just be a hash of the last modification time
       var etag = $info.get().hash
       # Then check if the client should reuse their cache or not
-      if ctx.getHeader("ETag", "") == etag:
+      if ctx.getHeader("If-None-Match", "") == etag:
         ctx.send("Use cache", Http304)
       else:
         ctx.setHeader("ETag", etag)
