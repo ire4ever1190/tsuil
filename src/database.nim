@@ -5,18 +5,17 @@ import std/[
   sha1
 ]
 
-import tiny_sqlite
-import common, pdfscraper
-import anano
+import pkg/[
+  tiny_sqlite,
+  anano
+]
+
+import common
 
 const tablesScript = slurp("tables.sql")
 
 using db: DbConn
 
-type
-  SearchResult* = object
-    page*: int
-    pdf*: NanoID
 
 #
 # Converters
@@ -65,7 +64,7 @@ proc to[T](x: ResultRow, obj: typedesc[T]): T =
 #
 
 
-proc insert*(db; pdf: PDFFileInfo): NanoID {.discardable.} =
+proc insert*(db; pdf: PDFFileInfo, id = genNanoID()): NanoID {.discardable.} =
   ## Inserts PDF metadata into the database.
   ## Returns the ID that was generated for it
   const stmt = """
@@ -74,7 +73,6 @@ proc insert*(db; pdf: PDFFileInfo): NanoID {.discardable.} =
         ?, ?, ?, ?, ?, ?, ?, ?, ?
       )
   """
-  let id = genNanoID()
   db.exec(stmt, id, pdf.title, pdf.lastModified, pdf.pages, pdf.author, pdf.keywords, pdf.subject, pdf.filename, pdf.hash)
   result = id
 
@@ -116,7 +114,7 @@ proc searchFor*(db; query: string): seq[SearchResult] =
 proc getPDF*(db; pdfID: NanoID): Option[PDFFileInfo] =
   ## Get metadata on PDF from its ID
   const stmt = """
-    SELECT title, lastModified, pages, author, keywords, subject, filename, hash
+    SELECT id as id, title, lastModified, pages, author, keywords, subject, filename, hash
     FROM PDF
     WHERE id = ?
   """

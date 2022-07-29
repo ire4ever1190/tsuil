@@ -12,7 +12,6 @@ Make sure to have the following installed
  - `file`
  - `poppler`
  - `nim` (>=1.6.0)
- - `npm`
 
 Then run `nimble install https://github.com/ire4ever1190/tsuil`. This installs
 `tsuil` which you can run to start the server (runs on port 4356)
@@ -24,8 +23,6 @@ Then run `nimble install https://github.com/ire4ever1190/tsuil`. This installs
 ## FAQ
 
  - **Why Nim**: I like Nim
- - **Why react**: Need to learn it for uni course
- - **Do you like react**: its ok
  - **Is tsuil any good?**: no
  - **Why circle CI instead of github actions?**: See react
  - **Is it producton ready?**: Probably not, but I'm going to use it anyways

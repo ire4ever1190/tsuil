@@ -15,6 +15,9 @@ import std/[
   setutils,
   sha1
 ]
+
+import types
+
 from tiny_sqlite import SqliteError
 import asyncthreadpool
 
@@ -75,26 +78,19 @@ proc process(name, file: string): Option[string] =
 # since it completes fast but wanted to try it out
 var pdfWorker = newThreadPool()
 
-const index = slurp("../public/index.html")
-
 import std/httpclient
 
-proc sendReactFile(ctx: Context, path: string) {.async.} =
+proc sendTsuilFile(ctx: Context, path: string) {.async.} =
   ## When in release mode it gets the files from the build folder
   ## During debug it makes a request to the dev server and returns response (hacky yes, but works)
-  when defined(release):
-    await ctx.sendFile("build" / path, dir = getAppDir())
-  else:
-    let client = newAsyncHttpClient()
-    defer: client.close()
-    let resp = await client.request("http://127.0.0.1:3000/" & path)
-    ctx.send(await resp.body, resp.code, resp.headers)
+  await ctx.sendFile("public" / path, dir = getAppDir())
+
 
 "/" -> get:
-  await ctx.sendReactFile("index.html")
+  await ctx.sendTsuilFile("index.html")
 
 "/static/^file" -> get:
-  await ctx.sendReactFile("static" / ctx.pathParams["file"])
+  await ctx.sendTsuilFile(ctx.pathParams["file"])
 
 "/pdf" -> post:
   var form = ctx.multipartForm()
@@ -125,7 +121,8 @@ proc sendReactFile(ctx: Context, path: string) {.async.} =
       for r in db.searchFor(query):
         let id = $r.pdf
         if id notin resp:
-          resp[id] = db.getPDF(r.pdf).get().toJson()
+          resp[id] = newJObject()
+          resp[id]["pdf"] = db.getPDF(r.pdf).get().toJson()
           resp[id]["pages"] = newJArray()
         resp[id]["pages"] &= %r.page
     # TODO: Sort the PDFs according to how many results were in each one

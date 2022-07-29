@@ -10,19 +10,31 @@ import std/[
 
 let serverProcess = startProcess(
   "nim c -r -f -d:databaseFile=':memory:' src/tsuil.nim",
-  options = {poStdErrToStdOut, poUsePath, poEvalCommand}
+  options = {poStdErrToStdOut, poUsePath, poEvalCommand, poParentStreams}
 )
-
 let client = newHttpClient()
 
+proc cleanUp() =
+  client.close()
+  kill serverProcess
+  close serverProcess
+  
+
+
 func serverUrl(path: string): string =
-  result = "http://127.0.0.1:8080" & path
+  result = "http://127.0.0.1:4356" & path
 
 proc post(path: string, body = "", multipart: MultipartData = nil): Response =
-  client.post(serverUrl path, body, multipart)
+  try:
+    client.post(serverUrl path, body, multipart)
+  finally:
+    cleanUp()
 
 proc get(path: string): Response =
-  client.get(serverUrl path)
+  try:
+    client.get(serverUrl path)
+  finally:
+    cleanUp()
 
 # Wait for server to start
 while serverProcess.running:
@@ -34,7 +46,7 @@ while serverProcess.running:
     sleep 1000
     discard
 
-assert serverProcess.running, serverProcess.outputStream().readAll()
+assert serverProcess.running
 
 
 template uploadPDF(file: string) =
@@ -46,6 +58,7 @@ template uploadPDF(file: string) =
 suite "Uploading PDFs":
   test "Uploading real PDF":
     uploadPDF("tests/example.pdf")
+    echo resp.body
     check resp.code == Http200
     check body["success"].bval
 
@@ -72,9 +85,10 @@ test "Searching":
   let resp = get("/search?query=first")
   check resp.code == Http200
   let body = resp.body.parseJson()
+  echo body
   let ids = toSeq(body.keys)
   check ids.len == 1
-  let pdf = body[ids[0]]
+  let pdf = body[ids[0]]["pdf"]
   check:
     pdf["title"].str == "Example Title"
     pdf["author"].str == "John Doe"
@@ -83,6 +97,4 @@ test "Searching":
 
 # test "Updating PDF":
 
-client.close()
-kill serverProcess
-close serverProcess
+cleanUp()

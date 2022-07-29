@@ -8,19 +8,9 @@ import std/[
   sha1
 ]
 
-import common
+import common, types
 
-type
-  PDFFileInfo* = object
-    ## Metadata associated with the PDF
-    title*: string
-    lastModified*: DateTime
-    pages*: int
-    author*: string
-    keywords*: string
-    subject*: string 
-    filename*: string
-    hash*: SecureHash # Hash of the file contents
+
 
 const 
   processOptions = {poStdErrToStdOut, poUsePath}
