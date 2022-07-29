@@ -1,18 +1,6 @@
 version: 2.1
 
-jobs:
-  eslint:
-    docker:
-      - image: node:slim
-    steps:
-      - checkout
-      - run:
-          name: Setup NPM
-          command: npm install
-      - run:
-          name: Run linter
-          command: npm run lint
-          
+jobs:          
   Unit-Tests:
     docker:
       - image: nimlang/nim:1.6.4-alpine-regular
@@ -36,7 +24,4 @@ jobs:
 workflows:
   Tests:
     jobs:
-      - eslint
-      - Unit-Tests:
-          requires: 
-            - eslint
+      - Unit-Tests
