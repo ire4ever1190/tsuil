@@ -3,7 +3,6 @@ import std/[
   httpclient,
   osproc,
   os,
-  streams,
   json,
   sequtils,
   exitProcs
@@ -89,7 +88,7 @@ test "Searching":
     pdf["title"].str == "Example Title"
     pdf["author"].str == "John Doe"
     pdf["hash"].str == "B198598A60CBE85FA77AFF44119ACF36986F6FAF"
-    pdf["pages"] == % @[1]
+    body[ids[0]]["pages"] == % @[1]
 
 # test "Updating PDF":
 
