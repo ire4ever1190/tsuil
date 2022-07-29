@@ -95,6 +95,15 @@ proc insertPage*(db; pdfID: NanoID, num: int, body: string) =
   """
   db.exec(stmt, pdfID, num, body)
 
+proc update*(db; id: NanoID, update: PDFUpdate) =
+  ## Updates a PDF with the values in update
+  const stmt = """
+    UPDATE PDF
+    SET title = ?, subject = ?
+    WHERE id = ?
+  """
+  db.exec(stmt, update.title, update.subject, id)
+
 proc searchFor*(db; query: string): seq[SearchResult] =
   ## Searches for some text and then returns
   ## list of results (which have the pdf and page)
@@ -119,6 +128,17 @@ proc getPDF*(db; pdfID: NanoID): Option[PDFFileInfo] =
     WHERE id = ?
   """
   result = some db.one(stmt, pdfID).get().to(PDFFileInfo)
+
+proc getPDFs*(db;): seq[PDFFileInfo] =
+  ## Gets all PDFS in database
+  # TODO: implement pagination
+  const stmt = """
+     SELECT id as id, title, lastModified, pages, author, keywords, subject, filename, hash
+     FROM PDF
+  """
+  for row in db.iterate(stmt):
+    result &= row.to(PDFFileInfo)
+
 
 export tiny_sqlite
 export anano

@@ -85,6 +85,7 @@ test "Searching":
   check ids.len == 1
   let pdf = body[ids[0]]["pdf"]
   check:
+    pdf["filename"].str == "example.pdf"
     pdf["title"].str == "Example Title"
     pdf["author"].str == "John Doe"
     pdf["hash"].str == "B198598A60CBE85FA77AFF44119ACF36986F6FAF"

@@ -20,6 +20,11 @@ type
     filename*: string
     when not defined(js):
       hash*: SecureHash # Hash of the file contents
+
+  PDFUpdate* = object
+    ## Values to overwrite PDF with
+    title*: string
+    subject*: string
     
   SearchResult* = object
     ## Search result from database

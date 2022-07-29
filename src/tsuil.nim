@@ -97,7 +97,7 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
   if "file" in form:
     echo "recieved ", form["file"].name
     let
-      name = form["file"].name
+      name = form["file"].filename.get("file.pdf")
       file = form["file"].value
     {.gcsafe.}:
       let resVal = await pdfWorker.spawn process(
@@ -110,7 +110,12 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
   else:
     raise (ref KeyError)(msg: "Invalid upload, make sure the file is in the `file` param")
 
-# "/pdf/:id" -> delete:
+
+"/pdfs" -> get:
+  withDB:
+    ctx.send db.getPDFs().toJson()
+
+
 
 
 "/search" -> get:
@@ -130,12 +135,17 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
   else:
     raise (ref KeyError)(msg: "Missing `query` query parameter")
 
-"/pdf/:id" -> get:
-  let strID = ctx.pathParams["id"]
+template withID(testID: string, body: untyped) =
+  ## Parses ID and runs body if its valid
+  let strID {.inject.}= testID
   if strID.len != nanoIDSize:
     raise (ref KeyError)(msg: "PDF with id " & strID & " is not valid")
   else:
-    let id = ctx.pathParams["id"].parseNanoID()
+    let id {.inject.} = ctx.pathParams["id"].parseNanoID()
+    body
+    
+"/pdf/:id" -> get:
+  withID(ctx.pathParams["id"]):
     var info: Option[PDFFileInfo]
     withDB: info = db.getPDF(id)
     if info.isSome:
@@ -151,4 +161,16 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
     else:
       raise (ref NotFoundError)(msg: "Couldn't find pdf: " & strID)
 
+"/pdf/:id" -> put:
+  withID ctx.pathParams["id"]:
+    withDB:
+      echo ctx.json(PDFUpdate)
+      db.update(id, ctx.json(PDFUpdate))
+      echo "updated"
+
 run(threads = 1, port = 4356)
+
+
+
+
+

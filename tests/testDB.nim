@@ -1,6 +1,7 @@
 import std/[
   unittest,
-  sequtils
+  sequtils,
+  sha1
 ]
 
 import tiny_sqlite
@@ -16,10 +17,16 @@ test "Creating tables":
 var id: NanoID # ID of the PDF we are testing with
 
 suite "PDF info":
-  let info = getPDFInfo(pdfFile)
+  var info = getPDFInfo(pdfFile)
+  
   test "Inserting":
     id = db.insert info
+    check info.filename == "example.pdf"
     check db.value("SELECT COUNT(*) FROM PDF").get().intVal == 1
+
+  test "Getting all":
+    info.id = id
+    check db.getPDFs() == @[info]
     
   test "Retrieving via ID":
     let dbInfo = db.getPDF(id).get()

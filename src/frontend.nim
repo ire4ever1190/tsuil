@@ -5,7 +5,9 @@ import std/[
   asyncjs,
   jsfetch,
   jsonutils,
-  json
+  json,
+  sugar,
+  httpcore
 ]
 import common
 import pkg/anano
@@ -21,14 +23,28 @@ var
   page = Search 
   searchTimeout: Timeout # Used for debouncing search
   results: seq[tuple[pdf: PDFFileInfo, pages: seq[int]]]
+  pdfs: seq[PDFFileInfo]
 
-proc doSearch(term: string) {.async.} =
-  echo "Seaching for " & term
-  let body = fetch(cstring "/search?query=" & term)
-    .await()
+proc toJson(resp: Future[Response] | Response): Future[JsonNode] {.async.} =
+  ## Gets Json (nims version) from a response
+  let re = when resp is Future[Response]: await resp else: resp
+  result = re
     .text()
     .await().`$`
     .parseJson()
+
+proc loadPDFS() {.async.} =
+  pdfs = fetch(cstring"/pdfs")
+      .toJson()
+      .await()
+      .jsonTo(seq[PDFFileInfo], JOptions(allowExtraKeys: true))
+  redraw()
+
+discard loadPDFs()
+
+proc doSearch(term: string) {.async.} =
+  echo "Seaching for " & term
+  let body = await fetch(cstring "/search?query=" & term).toJson()
   results.setLen(0)
   for id in body.keys:
     var newResult: typeof(results[0])
@@ -37,6 +53,7 @@ proc doSearch(term: string) {.async.} =
     results &= newResult
     
 proc searchPage(): VNode =
+  ## Page to search through PDFs
   result = buildHtml(tdiv):
     tdiv(class="field"):
       input(class="input", placeHolder="Search term"):
@@ -67,14 +84,56 @@ proc searchPage(): VNode =
             ul:
               for page in pages:
                 li:
-                  a(href="/pdf/" & $pdf.id & "/#page=" & $page):
+                  a(href=cstring("/pdf/" & $pdf.id & "/#page=" & $page)):
                     text $page
   
 proc editPage(): VNode = 
+  ## Page for editing PDFs metadata
+  proc textInput(value, field: string, pdf: PDFFileInfo): VNode =
+    result = buildHtml(tdiv(class="panel-block")):
+      tdiv(class="field"):
+        label(class="label"):
+          text field
+        tdiv(class="control"):
+          input(class="input", `type`="text", value=value, id = cstring($pdf.id & field))
+          
   result = buildHtml(tdiv):
-    text "Edit"
-
+    for pdf in pdfs:
+      nav(class="panel"):
+        p(class="panel-heading"):
+          text pdf.title
+        a(class="panel-block is-active"):
+          span(class="panel-icon"):
+            text "📁"
+          text pdf.filename
+        # Have inputs for the different properties
+        textInput(pdf.title, "Title", pdf)
+        textInput(pdf.subject, "Subject", pdf)
+        
+        tdiv(class="panel-block"):
+          button(class="button is-primary", id = cstring $pdf.id):
+            text "Update"
+            proc onClick(ev: Event, n: VNode) =
+              # Find the PDF and update the values (need to refind it cause of issues with closures)
+              let pdfID = parseNanoID($n.id)
+              let newValues = PDFUpdate(
+                title: $document.getElementById(n.id & "Title").value,
+                subject: $document.getElementById(n.id & "Subject").value 
+              )
+              # Send patch request to update PDF
+              let opts = newFetchOptions(
+                HttpPut,
+                cstring($newValues.toJson()),
+                fmCors,
+                fcInclude,
+                fchDefault,
+                frpNoReferrer,
+                false
+              )
+              discard fetch(cstring("/pdf/" & $pdfID), opts)
+              
 proc uploadpage(): VNode =
+  ## Page to upload new PDFs
   result = buildHtml(tdiv):
     form(action="/pdf", `method`="post", encType="multipart/form-data"):
       tdiv(class="field has-addons"):
@@ -105,8 +164,8 @@ proc createDom(data: RouterData): VNode =
       tdiv(class="tabs is-centered"):
         ul:
           for tab in Page:
-            li(class=(if page == tab: "is-active" else: "")):
-              a(href="#/" & toLowerAscii $tab):
+            li(class=cstring(if page == tab: "is-active" else: "")):
+              a(href=cstring("#/" & toLowerAscii $tab)):
                 text $tab
       # Render current page
       case page
