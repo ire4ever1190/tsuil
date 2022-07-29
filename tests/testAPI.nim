@@ -5,12 +5,13 @@ import std/[
   os,
   streams,
   json,
-  sequtils
+  sequtils,
+  exitProcs
 ]
 
 let serverProcess = startProcess(
-  "nim c -r -f -d:databaseFile=':memory:' src/tsuil.nim",
-  options = {poStdErrToStdOut, poUsePath, poEvalCommand, poParentStreams}
+  "nim c -r -d:databaseFile=':memory:' src/tsuil.nim",
+  options = {poStdErrToStdOut, poUsePath, poEvalCommand}
 )
 let client = newHttpClient()
 
@@ -19,22 +20,17 @@ proc cleanUp() =
   kill serverProcess
   close serverProcess
   
+addExitProc(cleanUp)  
 
 
 func serverUrl(path: string): string =
   result = "http://127.0.0.1:4356" & path
 
 proc post(path: string, body = "", multipart: MultipartData = nil): Response =
-  try:
-    client.post(serverUrl path, body, multipart)
-  finally:
-    cleanUp()
+  client.post(serverUrl path, body, multipart)
 
 proc get(path: string): Response =
-  try:
-    client.get(serverUrl path)
-  finally:
-    cleanUp()
+  client.get(serverUrl path)
 
 # Wait for server to start
 while serverProcess.running:
