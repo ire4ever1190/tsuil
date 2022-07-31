@@ -93,6 +93,7 @@ proc searchPage(): VNode =
                 li:
                   a(href=cstring("/pdf/" & $pdf.id & "/#page=" & $page)):
                     text $page
+      br()
   
 proc editPage(): VNode = 
   ## Page for editing PDFs metadata
