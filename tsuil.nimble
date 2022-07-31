@@ -19,7 +19,7 @@ requires "anano == 0.2.0"
 requires "karax == 1.2.2"
 
 task buildJS, "Builds JS files":
-  selfExec "js -d:release --outdir:public/ src/frontend"
+  selfExec "js -d:release -d:danger -d:strip --outdir:public/ src/frontend"
 
 before install:
   buildJSTask()

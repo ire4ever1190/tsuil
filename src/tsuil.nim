@@ -89,6 +89,9 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
 "/" -> get:
   await ctx.sendTsuilFile("index.html")
 
+"/favicon.ico" -> get:
+  await ctx.sendTsuilFile("favicon.ico")
+
 "/static/^file" -> get:
   await ctx.sendTsuilFile(ctx.pathParams["file"])
 
