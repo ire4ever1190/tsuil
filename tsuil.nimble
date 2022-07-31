@@ -12,7 +12,7 @@ installDirs   = @["public"]
 # Dependencies
 
 requires "nim >= 1.6.0"
-requires "mike#70a4548"
+requires "mike#36d1c87"
 requires "tiny_sqlite == 0.1.3"
 requires "asyncthreadpool#7e533b3"
 requires "anano == 0.2.0"
