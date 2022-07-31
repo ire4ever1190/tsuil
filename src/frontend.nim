@@ -24,6 +24,7 @@ var
   searchTimeout: Timeout # Used for debouncing search
   results: seq[tuple[pdf: PDFFileInfo, pages: seq[int]]]
   pdfs: seq[PDFFileInfo]
+  subjects: seq[string]
 
 proc toJson(resp: Future[Response] | Response): Future[JsonNode] {.async.} =
   ## Gets Json (nims version) from a response
@@ -38,6 +39,12 @@ proc loadPDFS() {.async.} =
       .toJson()
       .await()
       .jsonTo(seq[PDFFileInfo], JOptions(allowExtraKeys: true))
+  # Could probably get subjects from list of PDFs but this saves having to change
+  # once I implement paginatino
+  subjects = fetch(cstring"/subjects")
+    .toJson()
+    .await()
+    .to(seq[string])
   redraw()
 
 discard loadPDFs()
@@ -89,14 +96,19 @@ proc searchPage(): VNode =
   
 proc editPage(): VNode = 
   ## Page for editing PDFs metadata
-  proc textInput(value, field: string, pdf: PDFFileInfo): VNode =
+  proc textInput(value, field: string, pdf: PDFFileInfo, options: seq[string] = @[]): VNode =
+    let id = cstring($pdf.id & field)
     result = buildHtml(tdiv(class="panel-block")):
       tdiv(class="field"):
         label(class="label"):
           text field
         tdiv(class="control"):
-          input(class="input", `type`="text", value=value, id = cstring($pdf.id & field))
-          
+          input(class="input", `type`="text", value=value, id = id, list=id & "Items")
+          if options.len > 0:
+            datalist(id=id & "Items"):
+              for option in options:
+                option(value=cstring(option))
+              
   result = buildHtml(tdiv):
     for pdf in pdfs:
       nav(class="panel"):
@@ -108,7 +120,7 @@ proc editPage(): VNode =
           text pdf.filename
         # Have inputs for the different properties
         textInput(pdf.title, "Title", pdf)
-        textInput(pdf.subject, "Subject", pdf)
+        textInput(pdf.subject, "Subject", pdf, subjects)
         
         tdiv(class="panel-block"):
           button(class="button is-primary", id = cstring $pdf.id):

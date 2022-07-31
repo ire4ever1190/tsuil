@@ -5,7 +5,7 @@ import std/[
 ]
 
 import tiny_sqlite
-import database, pdfscraper
+import database, pdfscraper, types
 
 let db = openDatabase(":memory:")
 
@@ -37,6 +37,21 @@ suite "PDF info":
   test "Can't add same PDF":
     expect SqliteError:
       db.insert getPDFInfo(pdfFile)
+
+  test "Updating Info":
+    let newInfo = PDFUpdate(
+      title: "New title",
+      subject: "Computing"
+    )
+    db.update(id, newInfo)
+    let dbInfo = db.getPDF(id).get()
+    check:
+      dbInfo.title == "New title"
+      dbInfo.subject == "Computing"
+
+  test "Getting all subjects":
+    check db.getSubjects() == @["Computing"]    
+    
 
 suite "Pages":
   let pages = toSeq: getPDFPages(pdfFile)

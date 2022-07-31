@@ -168,6 +168,10 @@ template withID(testID: string, body: untyped) =
       db.update(id, ctx.json(PDFUpdate))
       echo "updated"
 
+"/subjects" -> get:
+  withDB:
+    ctx.send db.getSubjects()
+
 run(threads = 1, port = 4356)
 
 

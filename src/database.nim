@@ -135,10 +135,19 @@ proc getPDFs*(db;): seq[PDFFileInfo] =
   const stmt = """
      SELECT id as id, title, lastModified, pages, author, keywords, subject, filename, hash
      FROM PDF
+     ORDER BY lastModified
   """
   for row in db.iterate(stmt):
     result &= row.to(PDFFileInfo)
 
+proc getSubjects*(db): seq[string] =
+  ## Gets list of all subjects in the database
+  const stmt = """
+    SELECT DISTINCT(subject)
+    FROM PDF
+  """
+  for row in db.iterate(stmt):
+    result &= row[0].strVal
 
 export tiny_sqlite
 export anano
