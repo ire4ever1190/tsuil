@@ -96,31 +96,31 @@ proc searchPage(): VNode =
   
 proc editPage(): VNode = 
   ## Page for editing PDFs metadata
-  proc textInput(value, field: string, pdf: PDFFileInfo, options: seq[string] = @[]): VNode =
+  proc textInput(value, field: string, pdf: PDFFileInfo, list: string = ""): VNode =
     let id = cstring($pdf.id & field)
     result = buildHtml(tdiv(class="panel-block")):
       tdiv(class="field"):
         label(class="label"):
           text field
         tdiv(class="control"):
-          input(class="input", `type`="text", value=value, id = id, list=id & "Items")
-          if options.len > 0:
-            datalist(id=id & "Items"):
-              for option in options:
-                option(value=cstring(option))
+          input(class="input", `type`="text", value=value, id = id, list=list)
               
   result = buildHtml(tdiv):
+    # Have list of subjects so the subjects field has autocomplete
+    datalist(id="autocompleteSubjects"):
+      for option in subjects:
+        option(value=cstring(option))
     for pdf in pdfs:
       nav(class="panel"):
         p(class="panel-heading"):
           text pdf.title
-        a(class="panel-block is-active"):
+        a(class="panel-block is-active", href=cstring("/pdf/" & $pdf.id)):
           span(class="panel-icon"):
             text "📁"
           text pdf.filename
         # Have inputs for the different properties
         textInput(pdf.title, "Title", pdf)
-        textInput(pdf.subject, "Subject", pdf, subjects)
+        textInput(pdf.subject, "Subject", pdf, "autocompleteSubjects")
         
         tdiv(class="panel-block"):
           button(class="button is-primary", id = cstring $pdf.id):
