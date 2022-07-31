@@ -135,7 +135,7 @@ proc getPDFs*(db;): seq[PDFFileInfo] =
   const stmt = """
      SELECT id as id, title, lastModified, pages, author, keywords, subject, filename, hash
      FROM PDF
-     ORDER BY lastModified
+     ORDER BY lastModified DESC
   """
   for row in db.iterate(stmt):
     result &= row.to(PDFFileInfo)
