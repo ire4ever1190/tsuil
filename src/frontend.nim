@@ -79,21 +79,23 @@ proc searchPage(): VNode =
       l[0] = "max-height: 30vh"
       l[1] = "overflow: scroll"
       l
-      
-    for (pdf, pages) in results:
-      echo pdf
-      tdiv(class="card"):
-        `header`(class="card-header"):
-          p(class="card-header-title"):
-            text pdf.title
-        tdiv(class="card-content"):
-          tdiv(class="content", style = hideOverflow):
-            ul:
-              for page in pages:
-                li:
-                  a(href=cstring("/pdf/" & $pdf.id & "/#page=" & $page)):
-                    text $page
+    if results.len != 0:
+      for (pdf, pages) in results:
+        tdiv(class="card"):
+          `header`(class="card-header"):
+            p(class="card-header-title"):
+              text pdf.title
+          tdiv(class="card-content"):
+            tdiv(class="content", style = hideOverflow):
+              ul:
+                for page in pages:
+                  li:
+                    a(href=cstring("/pdf/" & $pdf.id & "/#page=" & $page)):
+                      text $page
       br()
+    elif searchTimeout != nil:
+      text "No results found"
+      
   
 proc editPage(): VNode = 
   ## Page for editing PDFs metadata
