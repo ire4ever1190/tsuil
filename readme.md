@@ -16,13 +16,9 @@ Make sure to have the following installed
 Then run `nimble install https://github.com/ire4ever1190/tsuil`. This installs
 `tsuil` which you can run to start the server (runs on port 4356)
 
-### Docker
-
-**TODO**: Email me if this is critical
-
 ## FAQ
 
  - **Why Nim**: I like Nim
- - **Is tsuil any good?**: no
- - **Why circle CI instead of github actions?**: See react
+ - **Is tsuil any good?**: kinda
+ - **Why circle CI instead of github actions?**: Thought I needed to learn it
  - **Is it producton ready?**: Probably not, but I'm going to use it anyways

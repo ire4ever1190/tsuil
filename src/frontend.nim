@@ -90,7 +90,7 @@ proc searchPage(): VNode =
               ul:
                 for page in pages:
                   li:
-                    a(href=cstring("/pdf/" & $pdf.id & "/#page=" & $page)):
+                    a(href=cstring("/pdfs/" & $pdf.id & "/#page=" & $page)):
                       text $page
       br()
     elif searchTimeout != nil:
@@ -117,7 +117,7 @@ proc editPage(): VNode =
       nav(class="panel"):
         p(class="panel-heading"):
           text pdf.title
-        a(class="panel-block is-active", href=cstring("/pdf/" & $pdf.id)):
+        a(class="panel-block is-active", href=cstring("/pdfs/" & $pdf.id)):
           span(class="panel-icon"):
             text "📁"
           text pdf.filename
@@ -145,7 +145,7 @@ proc editPage(): VNode =
                 frpNoReferrer,
                 false
               )
-              discard fetch(cstring("/pdf/" & $pdfID), opts)
+              discard fetch(cstring("/pdfs/" & $pdfID), opts)
               
 proc uploadpage(): VNode =
   ## Page to upload new PDFs

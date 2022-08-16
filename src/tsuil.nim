@@ -95,32 +95,6 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
 "/static/^file" -> get:
   await ctx.sendTsuilFile(ctx.pathParams["file"])
 
-"/pdf" -> post:
-  var form = ctx.multipartForm()
-  if "file" in form:
-    echo "recieved ", form["file"].name
-    let
-      name = form["file"].filename.get("file.pdf")
-      file = form["file"].value
-    {.gcsafe.}:
-      let resVal = await pdfWorker.spawn process(
-        name,
-        file
-      )
-    # Wait for it to be processed
-    let status = if resVal.isNone: Http200 else: Http400
-    ctx.send(%*{"success": resVal.isNone, "msg": resVal.get("")}, status)
-  else:
-    raise (ref KeyError)(msg: "Invalid upload, make sure the file is in the `file` param")
-
-
-"/pdfs" -> get:
-  withDB:
-    ctx.send db.getPDFs().toJson()
-
-
-
-
 "/search" -> get:
   if "query" in ctx.queryParams:
     let query = ctx.queryParams["query"]
@@ -147,7 +121,29 @@ template withID(testID: string, body: untyped) =
     let id {.inject.} = ctx.pathParams["id"].parseNanoID()
     body
     
-"/pdf/:id" -> get:
+"/pdfs" -> post:
+  var form = ctx.multipartForm()
+  if "file" in form:
+    echo "recieved ", form["file"].name
+    let
+      name = form["file"].filename.get("file.pdf")
+      file = form["file"].value
+    {.gcsafe.}:
+      let resVal = await pdfWorker.spawn process(
+        name,
+        file
+      )
+    # Wait for it to be processed
+    let status = if resVal.isNone: Http200 else: Http400
+    ctx.send(%*{"success": resVal.isNone, "msg": resVal.get("")}, status)
+  else:
+    raise (ref KeyError)(msg: "Invalid upload, make sure the file is in the `file` param")
+
+"/pdfs" -> get:
+  withDB:
+    ctx.send db.getPDFs().toJson()
+
+"/pdfs/:id" -> get:
   withID(ctx.pathParams["id"]):
     var info: Option[PDFFileInfo]
     withDB: info = db.getPDF(id)
@@ -164,7 +160,7 @@ template withID(testID: string, body: untyped) =
     else:
       raise (ref NotFoundError)(msg: "Couldn't find pdf: " & strID)
 
-"/pdf/:id" -> put:
+"/pdfs/:id" -> put:
   withID ctx.pathParams["id"]:
     withDB:
       echo ctx.json(PDFUpdate)
