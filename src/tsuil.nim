@@ -81,8 +81,7 @@ var pdfWorker = newThreadPool()
 import std/httpclient
 
 proc sendTsuilFile(ctx: Context, path: string) {.async.} =
-  ## When in release mode it gets the files from the build folder
-  ## During debug it makes a request to the dev server and returns response (hacky yes, but works)
+  ## Sends file from public folder
   await ctx.sendFile("public" / path, dir = getAppDir())
 
 
