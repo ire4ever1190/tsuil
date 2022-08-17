@@ -47,7 +47,7 @@ assert serverProcess.running
 template uploadPDF(file: string) =
   var form = newMultipartData()
   form.addFiles({"file": file})
-  let resp {.inject.} = post("/pdf", multipart = form)
+  let resp {.inject.} = post("/pdfs", multipart = form)
   let body {.inject.} = resp.body.parseJson()
 
 suite "Uploading PDFs":
