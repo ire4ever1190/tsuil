@@ -113,7 +113,8 @@ proc editPage(): VNode =
     datalist(id="autocompleteSubjects"):
       for option in subjects:
         option(value=cstring(option))
-    for pdf in pdfs:
+    for i in 0..<pdfs.len:
+      let pdf = pdfs[i]
       nav(class="panel"):
         p(class="panel-heading"):
           text pdf.title
@@ -124,16 +125,21 @@ proc editPage(): VNode =
         # Have inputs for the different properties
         textInput(pdf.title, "Title", pdf)
         textInput(pdf.subject, "Subject", pdf, "autocompleteSubjects")
-        
-        tdiv(class="panel-block"):
-          button(class="button is-primary", id = cstring $pdf.id):
+
+        tdiv(class="panel-block buttons", id = cstring $pdf.id):
+          let id = pdf.id
+          button(class="button is-danger"):
+            text "Delete"
+            proc onClick(ev: Event, n: VNode) =
+              echo id
+          button(class="button is-primary"):
             text "Update"
             proc onClick(ev: Event, n: VNode) =
               # Find the PDF and update the values (need to refind it cause of issues with closures)
               let pdfID = parseNanoID($n.id)
               let newValues = PDFUpdate(
                 title: $document.getElementById(n.id & "Title").value,
-                subject: $document.getElementById(n.id & "Subject").value 
+                subject: $document.getElementById(n.id & "Subject").value
               )
               # Send patch request to update PDF
               let opts = newFetchOptions(
@@ -146,7 +152,6 @@ proc editPage(): VNode =
                 false
               )
               discard fetch(cstring("/pdfs/" & $pdfID), opts)
-              
 proc uploadpage(): VNode =
   ## Page to upload new PDFs
   result = buildHtml(tdiv):

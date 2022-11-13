@@ -9,10 +9,6 @@ import std/[
   locks,
   strutils,
   json,
-  md5,
-  times,
-  algorithm,
-  setutils,
   sha1
 ]
 
@@ -84,32 +80,22 @@ proc sendTsuilFile(ctx: Context, path: string) {.async.} =
   ## Sends file from public folder
   await ctx.sendFile("public" / path, dir = getAppDir())
 
+servePublic("public", "/", {
+  "": "index.html"
+})
 
-"/" -> get:
-  await ctx.sendTsuilFile("index.html")
-
-"/favicon.ico" -> get:
-  await ctx.sendTsuilFile("favicon.ico")
-
-"/static/^file" -> get:
-  await ctx.sendTsuilFile(ctx.pathParams["file"])
-
-"/search" -> get:
-  if "query" in ctx.queryParams:
-    let query = ctx.queryParams["query"]
-    var resp = newJObject()
-    withDB:
-      for r in db.searchFor(query):
-        let id = $r.pdf
-        if id notin resp:
-          resp[id] = newJObject()
-          resp[id]["pdf"] = db.getPDF(r.pdf).get().toJson()
-          resp[id]["pages"] = newJArray()
-        resp[id]["pages"] &= %r.page
-    # TODO: Sort the PDFs according to how many results were in each one
-    ctx.send(resp)
-  else:
-    raise (ref KeyError)(msg: "Missing `query` query parameter")
+"/search" -> get(query: Query[string]):
+  var resp = newJObject()
+  withDB:
+    for r in db.searchFor(query):
+      let id = $r.pdf
+      if id notin resp:
+        resp[id] = newJObject()
+        resp[id]["pdf"] = db.getPDF(r.pdf).get().toJson()
+        resp[id]["pages"] = newJArray()
+      resp[id]["pages"] &= %r.page
+  # TODO: Sort the PDFs according to how many results were in each one
+  ctx.send(resp)
 
 template withID(testID: string, body: untyped) =
   ## Parses ID and runs body if its valid
@@ -157,14 +143,12 @@ template withID(testID: string, body: untyped) =
         ctx.setHeader("ETag", etag)
         await ctx.sendFile("pdfs" / $id & ".pdf")
     else:
-      raise (ref NotFoundError)(msg: "Couldn't find pdf: " & strID)
+      raise newNotFoundError("Couldn't find pdf: " & strID)
 
 "/pdfs/:id" -> put:
   withID ctx.pathParams["id"]:
     withDB:
-      echo ctx.json(PDFUpdate)
       db.update(id, ctx.json(PDFUpdate))
-      echo "updated"
 
 "/subjects" -> get:
   withDB:
