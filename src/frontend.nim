@@ -90,7 +90,7 @@ proc searchPage(): VNode =
               ul:
                 for page in pages:
                   li:
-                    a(href=cstring("/pdfs/" & $pdf.id & "/#page=" & $page)):
+                    a(href=cstring("/pdfs/" & $pdf.id & "#page=" & $page)):
                       text $page
       br()
     elif searchTimeout != nil:
@@ -155,7 +155,7 @@ proc editPage(): VNode =
 proc uploadpage(): VNode =
   ## Page to upload new PDFs
   result = buildHtml(tdiv):
-    form(action="/pdf", `method`="post", encType="multipart/form-data"):
+    form(action="/pdfs", `method`="post", encType="multipart/form-data"):
       tdiv(class="field has-addons"):
         tdiv(class="file has-name"):
           label(class="file-label"):
