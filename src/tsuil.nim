@@ -107,6 +107,13 @@ template withID(testID: string, body: untyped) =
     let id {.inject.} = ctx.pathParams["id"].parseNanoID()
     body
 
+proc fromRequest(ctx: Context, name: string, _: typedesc[NanoID]): NanoID  =
+  let id = ctx.fromRequest("id", Path[string])
+  if id.len != nanoIDSize:
+    raise (ref KeyError)(msg: "PDF with id " & id & " is not valid")
+  else:
+    return id.parseNanoID()
+
 "/pdfs" -> post:
   var form = ctx.multipartForm()
   if "file" in form:
@@ -145,6 +152,10 @@ template withID(testID: string, body: untyped) =
         await ctx.sendFile("pdfs" / $id & ".pdf")
     else:
       raise newNotFoundError("Couldn't find pdf: " & strID)
+
+"/pdfs/:id" -> delete(pdf: NanoID):
+  withDB:
+    db.deletePDF(pdf)
 
 "/pdfs/:id" -> put:
   withID ctx.pathParams["id"]:

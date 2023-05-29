@@ -127,11 +127,12 @@ proc editPage(): VNode =
         textInput(pdf.subject, "Subject", pdf, "autocompleteSubjects")
 
         tdiv(class="panel-block buttons", id = cstring $pdf.id):
-          let id = pdf.id
           button(class="button is-danger"):
             text "Delete"
             proc onClick(ev: Event, n: VNode) =
-              echo id
+              let id = $ev.target.parentNode.getAttribute("id")
+              let opts = newFetchOptions(HttpDelete)
+              discard fetch(cstring("/pdfs/" & $id), opts)
           button(class="button is-primary"):
             text "Update"
             proc onClick(ev: Event, n: VNode) =
