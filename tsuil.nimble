@@ -16,7 +16,7 @@ requires "mike#5de97b3"
 requires "tiny_sqlite == 0.2.0"
 requires "asyncthreadpool#7e533b3"
 requires "anano == 0.2.0"
-requires "karax == 1.2.2"
+requires "karax == 1.3.0"
 
 task buildJS, "Builds JS files":
   selfExec "js -d:release -d:danger -d:strip --outdir:public/ src/frontend"

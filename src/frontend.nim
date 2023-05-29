@@ -19,8 +19,8 @@ type
     Edit
     Upload
 
-var 
-  page = Search 
+var
+  page = Search
   searchTimeout: Timeout # Used for debouncing search
   results: seq[tuple[pdf: PDFFileInfo, pages: seq[int]]]
   pdfs: seq[PDFFileInfo]
@@ -58,18 +58,18 @@ proc doSearch(term: string) {.async.} =
     newResult.pdf   = body[id]["pdf"].jsonTo(PDFFileInfo, JOptions(allowExtraKeys: true))
     newResult.pages = body[id]["pages"].jsonTo(seq[int])
     results &= newResult
-    
+
 proc searchPage(): VNode =
   ## Page to search through PDFs
   result = buildHtml(tdiv):
     tdiv(class="field"):
       input(class="input", placeHolder="Search term"):
-        proc oninput(ev: Event, n: VNode) = 
+        proc oninput(ev: Event, n: VNode) =
           # Debounce the search
           if searchTimeout != nil:
             searchTimeout.clearTimeout()
           # Search for input, then redraw
-          searchTimeout = setTimeout(proc() = 
+          searchTimeout = setTimeout(proc() =
             discard doSearch($n.value)
               .then(proc() = redraw())
           , 400)
@@ -95,9 +95,9 @@ proc searchPage(): VNode =
       br()
     elif searchTimeout != nil:
       text "No results found"
-      
-  
-proc editPage(): VNode = 
+
+
+proc editPage(): VNode =
   ## Page for editing PDFs metadata
   proc textInput(value, field: string, pdf: PDFFileInfo, list: string = ""): VNode =
     let id = cstring($pdf.id & field)
@@ -107,7 +107,7 @@ proc editPage(): VNode =
           text field
         tdiv(class="control"):
           input(class="input", `type`="text", value=value, id = id, list=list)
-              
+
   result = buildHtml(tdiv):
     # Have list of subjects so the subjects field has autocomplete
     datalist(id="autocompleteSubjects"):
@@ -136,20 +136,16 @@ proc editPage(): VNode =
             text "Update"
             proc onClick(ev: Event, n: VNode) =
               # Find the PDF and update the values (need to refind it cause of issues with closures)
-              let pdfID = parseNanoID($n.id)
+              let id = $ev.target.parentNode.getAttribute("id")
+              let pdfID = parseNanoID(id)
               let newValues = PDFUpdate(
-                title: $document.getElementById(n.id & "Title").value,
-                subject: $document.getElementById(n.id & "Subject").value
+                title: $document.getElementById(id & "Title").value,
+                subject: $document.getElementById(id & "Subject").value
               )
               # Send patch request to update PDF
               let opts = newFetchOptions(
                 HttpPut,
-                cstring($newValues.toJson()),
-                fmCors,
-                fcInclude,
-                fchDefault,
-                frpNoReferrer,
-                false
+                cstring($newValues.toJson())
               )
               discard fetch(cstring("/pdfs/" & $pdfID), opts)
 proc uploadpage(): VNode =
