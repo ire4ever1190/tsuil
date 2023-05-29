@@ -26,7 +26,7 @@ proc `%`(id: NanoID): JsonNode =
   result = % $id
 
 var
-  dbLock: Lock 
+  dbLock: Lock
   db {.guard: dbLock.} = openDatabase(databaseFile)
 
 template withDB(body: untyped) =
@@ -47,12 +47,12 @@ proc process(name, file: string): Option[string] =
   # Write the file
   let path = pdfFolder / name
   discard existsOrCreateDir(pdfFolder)
-  
+
   path.writeFile(file)
   if not path.isPDF():
     removeFile file
     return some"File is not a PDF"
-  
+
   withDB:
     let info = path.getPDFInfo()
     var pdfID: NanoID
@@ -86,15 +86,16 @@ servePublic("public", "/", {
 
 "/search" -> get(query: Query[string]):
   var resp = newJObject()
-  withDB:
-    for r in db.searchFor(query):
-      let id = $r.pdf
-      if id notin resp:
-        resp[id] = newJObject()
-        resp[id]["pdf"] = db.getPDF(r.pdf).get().toJson()
-        resp[id]["pages"] = newJArray()
-      resp[id]["pages"] &= %r.page
-  # TODO: Sort the PDFs according to how many results were in each one
+  if query != "":
+    withDB:
+      for r in db.searchFor(query):
+        let id = $r.pdf
+        if id notin resp:
+          resp[id] = newJObject()
+          resp[id]["pdf"] = db.getPDF(r.pdf).get().toJson()
+          resp[id]["pages"] = newJArray()
+        resp[id]["pages"] &= %r.page
+    # TODO: Sort the PDFs according to how many results were in each one
   ctx.send(resp)
 
 template withID(testID: string, body: untyped) =
@@ -105,7 +106,7 @@ template withID(testID: string, body: untyped) =
   else:
     let id {.inject.} = ctx.pathParams["id"].parseNanoID()
     body
-    
+
 "/pdfs" -> post:
   var form = ctx.multipartForm()
   if "file" in form:

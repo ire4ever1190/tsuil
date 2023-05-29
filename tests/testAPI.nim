@@ -18,8 +18,8 @@ proc cleanUp() =
   client.close()
   kill serverProcess
   close serverProcess
-  
-addExitProc(cleanUp)  
+
+addExitProc(cleanUp)
 
 
 func serverUrl(path: string): string =
@@ -76,20 +76,26 @@ suite "Uploading PDFs":
 # test "Delete PDF":
   # client.delete serverUrl("/pdf/" &
 
-test "Searching":
-  let resp = get("/search?query=first")
-  check resp.code == Http200
-  let body = resp.body.parseJson()
-  echo body
-  let ids = toSeq(body.keys)
-  check ids.len == 1
-  let pdf = body[ids[0]]["pdf"]
-  check:
-    pdf["filename"].str == "example.pdf"
-    pdf["title"].str == "Example Title"
-    pdf["author"].str == "John Doe"
-    pdf["hash"].str == "B198598A60CBE85FA77AFF44119ACF36986F6FAF"
-    body[ids[0]]["pages"] == % @[1]
+suite "Searching":
+  test "Basic search":
+    let resp = get("/search?query=first")
+    check resp.code == Http200
+    let body = resp.body.parseJson()
+    echo body
+    let ids = toSeq(body.keys)
+    check ids.len == 1
+    let pdf = body[ids[0]]["pdf"]
+    check:
+      pdf["filename"].str == "example.pdf"
+      pdf["title"].str == "Example Title"
+      pdf["author"].str == "John Doe"
+      pdf["hash"].str == "B198598A60CBE85FA77AFF44119ACF36986F6FAF"
+      body[ids[0]]["pages"] == % @[1]
+
+  test "Empty search":
+    let resp = get("/search?query=")
+    check resp.code == Http200
+    check resp.body == "{}"
 
 # test "Updating PDF":
 

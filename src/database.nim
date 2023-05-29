@@ -14,6 +14,7 @@ import common
 
 const tablesScript = slurp("tables.sql")
 
+
 using db: DbConn
 
 
